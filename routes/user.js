@@ -47,7 +47,6 @@ router.post("/signup", async (req, res) => {
             message: `Welcome ${createdUser.name}`,
         });
     } catch (e) {
-        console.log(e);
         return res.status(500).send(e);
     }
 });
