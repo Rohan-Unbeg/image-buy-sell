@@ -1,5 +1,5 @@
-import { express } from "express";
-import { bcrypt } from "bcrypt";
+import express from "express";
+import bcrypt from "bcrypt";
 
 const router = express.Router();
 
@@ -9,6 +9,7 @@ import {
     validatePassword,
 } from "../utils/validators.js";
 import { User } from "../models/userModel.js";
+import jwt from "jsonwebtoken";
 
 router.post("/signup", async (req, res) => {
     try {
@@ -31,7 +32,7 @@ router.post("/signup", async (req, res) => {
         }
 
         // const hashedPassword = await bcrypt.hash(password, (saltOrRounds=10));
-        const hashedPassword = await bcrypt.hash(password);
+        const hashedPassword = await bcrypt.hash(password, 10);
 
         const user = {
             email,
@@ -45,8 +46,68 @@ router.post("/signup", async (req, res) => {
         return res.status(201).json({
             message: `Welcome ${createdUser.name}`,
         });
-    } catch (error) {
+    } catch (e) {
+        console.log(e);
         return res.status(500).send(e);
+    }
+});
+
+router.post("/signin", async (req, res) => {
+    try {
+        const { email, password } = req.body;
+
+        if (email.length === 0) {
+            return res.status(400).json({ err: "Please provide email" });
+        }
+        if (password.length === 0) {
+            return res.status(400).json({ err: "Please provide password" });
+        }
+
+        const existingUser = await User.findOne({ where: { email } });
+
+        if (!existingUser) {
+            return res.status(404).json({ err: "User not found" });
+        }
+
+        const passwordMatched = await bcrypt.compare(
+            password,
+            existingUser.password
+        );
+
+        if (!passwordMatched) {
+            return res.status(400).json({
+                err: "email or pass mismatched",
+            });
+        }
+
+        const payload = {
+            user: {
+                id: existingUser.id,
+            },
+        };
+
+        const bearerToken = await jwt.sign(payload, "SECRET MESSAGE", {
+            expiresIn: 360000,
+        });
+
+        res.cookie("t", bearerToken, { expire: new Date() + 999 });
+        return res.status(200).json({
+            bearerToken,
+        });
+    } catch (e) {
+        console.log(e);
+        return res.status(500).send(e);
+    }
+});
+
+router.post("/signin", async (req, res) => {
+    try {
+        res.clearCookie("t");
+        return res.status(200).json({
+            message: "cookie deleted",
+        });
+    } catch (e) {
+        res.status(500).send(e);
     }
 });
 

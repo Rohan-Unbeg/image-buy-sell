@@ -1,6 +1,7 @@
 import express from "express";
 import { connectDB } from "./config/db.js";
-import { userRoutes } from "./routes/user.js";
+import userRoutes from "./routes/user.js";
+import productRoutes from "./routes/product.js";
 
 const app = express();
 
@@ -11,7 +12,8 @@ app.use(express.static("content"));
 
 const PORT = 1338;
 
-app.use("api/v1/user", userRoutes);
+app.use("/api/v1/user", userRoutes);
+app.use("/api/v1/product", productRoutes);
 
 app.listen(PORT, () => {
     console.log("Server is running on port: ", PORT);
